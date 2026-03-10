@@ -1,0 +1,232 @@
+-- =========================================================
+-- Online Retail Sales Analysis Project
+-- =========================================================
+
+-- =========================================================
+-- 1. Preview the dataset
+-- Business Question:
+-- What does the raw data look like?
+-- =========================================================
+SELECT *
+FROM Online_Retail;
+
+
+-- =========================================================
+-- 2. Count total transactions
+-- Business Question:
+-- How many rows are in the dataset?
+-- =========================================================
+SELECT COUNT(*) AS total_transactions
+FROM Online_Retail;
+
+
+-- =========================================================
+-- 3. Check table structure
+-- Business Question:
+-- What columns are available in the dataset?
+-- =========================================================
+PRAGMA TABLE_INFO(Online_Retail);
+
+
+-- =========================================================
+-- 4. Check for missing values
+-- Business Question:
+-- Are there missing values in important columns?
+-- =========================================================
+SELECT *
+FROM Online_Retail
+WHERE InvoiceDate IS NULL
+   OR StockCode IS NULL
+   OR Description IS NULL
+   OR Quantity IS NULL
+   OR InvoiceNo IS NULL
+   OR UnitPrice IS NULL
+   OR CustomerID IS NULL
+   OR Country IS NULL;
+
+
+-- =========================================================
+-- 5. Count cancelled orders
+-- Business Question:
+-- How many cancelled orders are in the dataset?
+-- Cancelled invoices usually start with 'C'
+-- =========================================================
+SELECT COUNT(*) AS cancelled_orders
+FROM Online_Retail
+WHERE InvoiceNo LIKE 'C%';
+
+
+-- =========================================================
+-- 6. Count negative quantities
+-- Business Question:
+-- How many rows have negative quantity values?
+-- These often represent returns
+-- =========================================================
+SELECT COUNT(*) AS negative_values
+FROM Online_Retail
+WHERE Quantity < 0;
+
+
+-- =========================================================
+-- 7. Create cleaned sales view
+-- Business Question:
+-- Can we build a cleaned dataset with valid sales only?
+-- =========================================================
+DROP VIEW IF EXISTS clean_retail_sales;
+
+CREATE VIEW clean_retail_sales AS
+SELECT *
+FROM Online_Retail
+WHERE InvoiceNo NOT LIKE 'C%'
+  AND Quantity > 0
+  AND UnitPrice > 0
+  AND CustomerID IS NOT NULL
+  AND Country IS NOT NULL
+  AND StockCode IS NOT NULL
+  AND Description IS NOT NULL
+  AND InvoiceDate IS NOT NULL;
+
+
+-- =========================================================
+-- 8. Preview revenue at row level
+-- Business Question:
+-- What does revenue look like for each transaction row?
+-- =========================================================
+SELECT 
+    InvoiceNo,
+    StockCode,
+    Quantity,
+    UnitPrice,
+    Quantity * UnitPrice AS revenue
+FROM clean_retail_sales;
+
+
+-- =========================================================
+-- 9. Overall revenue summary
+-- Business Question:
+-- What is the total revenue and average row-level revenue?
+-- =========================================================
+SELECT 
+    ROUND(SUM(Quantity * UnitPrice), 2) AS total_revenue,
+    ROUND(AVG(Quantity * UnitPrice), 2) AS avg_revenue
+FROM clean_retail_sales;
+
+
+-- =========================================================
+-- 10. Top 10 products by revenue
+-- Business Question:
+-- Which products generate the most revenue?
+-- =========================================================
+SELECT 
+    StockCode,
+    Description,
+    SUM(Quantity) AS total_quantity_per_product,
+    ROUND(SUM(Quantity * UnitPrice), 2) AS total_revenue_per_product
+FROM clean_retail_sales
+GROUP BY StockCode, Description
+ORDER BY total_revenue_per_product DESC
+LIMIT 10;
+
+
+-- =========================================================
+-- 11. Top 10 products by quantity sold
+-- Business Question:
+-- Which products sell the most units?
+-- =========================================================
+SELECT 
+    StockCode,
+    Description,
+    SUM(Quantity) AS total_units_sold
+FROM clean_retail_sales
+GROUP BY StockCode, Description
+ORDER BY total_units_sold DESC
+LIMIT 10;
+
+
+-- =========================================================
+-- 12. Top 10 customers by revenue
+-- Business Question:
+-- Which customers generate the most revenue?
+-- =========================================================
+SELECT 
+    CustomerID,
+    SUM(Quantity) AS total_quantity_per_customer,
+    ROUND(SUM(Quantity * UnitPrice), 2) AS total_revenue_per_customer
+FROM clean_retail_sales
+WHERE CustomerID != ''
+GROUP BY CustomerID
+ORDER BY total_revenue_per_customer DESC
+LIMIT 10;
+
+
+-- =========================================================
+-- 13. Top 10 customers by number of orders
+-- Business Question:
+-- Which customers place the most orders?
+-- =========================================================
+SELECT 
+    CustomerID,
+    COUNT(DISTINCT InvoiceNo) AS number_of_orders
+FROM clean_retail_sales
+WHERE CustomerID != ''
+GROUP BY CustomerID
+ORDER BY number_of_orders DESC
+LIMIT 10;
+
+
+-- =========================================================
+-- 14. Top 10 customers by average order value
+-- Business Question:
+-- Which customers spend the most per order on average?
+-- =========================================================
+SELECT 
+    CustomerID,
+    ROUND(SUM(Quantity * UnitPrice) / COUNT(DISTINCT InvoiceNo), 2) AS avg_order_value
+FROM clean_retail_sales
+WHERE CustomerID != ''
+GROUP BY CustomerID
+ORDER BY avg_order_value DESC
+LIMIT 10;
+
+
+-- =========================================================
+-- 15. Overall average order value
+-- Business Question:
+-- What is the average value of an order overall?
+-- =========================================================
+SELECT 
+    ROUND(SUM(Quantity * UnitPrice), 2) AS total_revenue,
+    COUNT(DISTINCT InvoiceNo) AS total_orders,
+    ROUND(SUM(Quantity * UnitPrice) / COUNT(DISTINCT InvoiceNo), 2) AS avg_order_value
+FROM clean_retail_sales;
+
+
+-- =========================================================
+-- 16. Top 10 countries by revenue
+-- Business Question:
+-- Which countries generate the most sales activity?
+-- =========================================================
+SELECT 
+    Country,
+    COUNT(DISTINCT InvoiceNo) AS total_orders,
+    SUM(Quantity) AS total_units_sold,
+    ROUND(SUM(Quantity * UnitPrice), 2) AS total_revenue
+FROM clean_retail_sales
+GROUP BY Country
+ORDER BY total_revenue DESC
+LIMIT 10;
+
+
+-- =========================================================
+-- 17. Monthly revenue trend
+-- Business Question:
+-- How does revenue change by month?
+-- Note:
+-- SUBSTR is used because some InvoiceDate values have time-format issues
+-- =========================================================
+SELECT 
+    SUBSTR(InvoiceDate, 1, 7) AS year_month,
+    ROUND(SUM(Quantity * UnitPrice), 2) AS total_revenue
+FROM clean_retail_sales
+GROUP BY year_month
+ORDER BY year_month;
