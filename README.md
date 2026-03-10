@@ -2,6 +2,13 @@
 
 This project analyzes an **online retail transaction dataset** using SQL. The goal is to explore sales performance, identify top customers and products, and uncover business insights through data cleaning and aggregation.
 
+## Dataset Source
+
+The dataset used in this project is the **Online Retail Dataset**, which contains transactional data for an online store.
+
+Source:
+https://archive.ics.uci.edu/ml/datasets/online+retail
+
 ---
 
 ## Project Objectives
@@ -99,7 +106,7 @@ The dataset used is the **Online Retail dataset**, which contains transactional 
 
 ---
 
-## Example Business Insight
+## Business Insight
 
 The analysis shows that a small number of customers generate a large portion of revenue, highlighting the importance of high-value customers to the business.
 
